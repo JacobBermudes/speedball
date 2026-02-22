@@ -7,10 +7,10 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func HomeMsg(a accounts.Account) tgbotapi.MessageConfig {
+func HomeMsg(a accounts.Account, u string) tgbotapi.MessageConfig {
 
 	msgText := "Бот управления доступом SurfBoost VPN" + "\n\n" +
-		"Пользователь " + a.Username + "!\n\n" +
+		"Пользователь " + u + "!\n\n" +
 		"Твой баланс: " + fmt.Sprintf("%d", a.Balance) + "\n" +
 		"Тариф: " + a.Tariff + "\n" +
 		"Статус доступа к VPN: " + a.State + "\n"

@@ -79,14 +79,13 @@ func main() {
 			if update.Message.Command() == "start" {
 
 				account := accounts.Account{
-					Username: update.Message.From.UserName,
-					ID:       update.Message.From.ID,
-					ChatID:   update.Message.Chat.ID,
+					ID:     update.Message.From.ID,
+					ChatID: update.Message.Chat.ID,
 				}
 				account.Init()
 				account.GetData()
 
-				bot.Send(HomeMsg(account))
+				bot.Send(HomeMsg(account, update.Message.From.UserName))
 			}
 		}
 

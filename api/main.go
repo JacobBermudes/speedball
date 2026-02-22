@@ -13,21 +13,20 @@ import (
 )
 
 type Account struct {
-	ID       int64  `json:"id"`
-	Username string `json:"username"`
-	ChatID   int64  `json:"chat_id"`
-	Balance  int64  `json:"balance"`
-	Tariff   string `json:"tariff"`
-	State    string `json:"state"`
+	ID      int64  `json:"id"`
+	ChatID  int64  `json:"chat_id"`
+	Balance int64  `json:"balance"`
+	Tariff  string `json:"tariff"`
+	State   string `json:"state"`
 }
 
-var REDIS_PASS = os.Getenv("REDIS_PASS")
+var rdbpass = os.Getenv("REDIS_PASS")
 var ctx = context.Background()
 
 var acc_db = redis.NewClient(&redis.Options{
 	Addr:     "localhost:6379",
 	DB:       3,
-	Password: REDIS_PASS,
+	Password: rdbpass,
 })
 
 func main() {
@@ -44,10 +43,9 @@ func initHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	account.ID, _ = strconv.ParseInt(r.URL.Query().Get("id"), 10, 64)
-	account.Username = r.URL.Query().Get("username")
 	account.ChatID, _ = strconv.ParseInt(r.URL.Query().Get("chat_id"), 10, 64)
-	if account.ID == 0 || account.Username == "" || account.ChatID == 0 {
-		http.Error(w, "Missing id, username or chat_id parameter", http.StatusBadRequest)
+	if account.ID == 0 || account.ChatID == 0 {
+		http.Error(w, "Missing id, or chat_id parameter", http.StatusBadRequest)
 		return
 	}
 
@@ -56,7 +54,8 @@ func initHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAlreadyReported)
 		return
 	}
-	acc_db.HSet(ctx, "user:"+strconv.FormatInt(account.ID, 10), account, "create_time", time.Now().Format("02.01.2006"))
+	acc_db.HSet(ctx, "user:"+strconv.FormatInt(account.ID, 10), account)
+	acc_db.HSet(ctx, "user:"+strconv.FormatInt(account.ID, 10), "create_time", time.Now().Unix())
 	w.WriteHeader(http.StatusCreated)
 }
 

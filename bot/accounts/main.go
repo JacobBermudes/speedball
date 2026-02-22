@@ -9,7 +9,6 @@ import (
 
 type Account struct {
 	ID       int64  `json:"id"`
-	Username string `json:"username"`
 	ChatID   int64  `json:"chat_id"`
 	Balance  int64  `json:"balance"`
 	Tariff   string `json:"tariff"`
@@ -19,7 +18,6 @@ type Account struct {
 func (a *Account) Init() {
 	initParams := url.Values{
 		"id":       {strconv.FormatInt(a.ID, 10)},
-		"username": {a.Username},
 		"chat_id":  {strconv.FormatInt(a.ChatID, 10)},
 	}
 	initUrl := "http://localhost:8801/speedball-api/v1/init?"

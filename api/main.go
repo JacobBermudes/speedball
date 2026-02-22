@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -37,9 +38,6 @@ func main() {
 
 func initHandler(w http.ResponseWriter, r *http.Request) {
 	var account Account
-	if REDIS_PASS == "" {
-		fmt.Println("Warning: REDIS_PASS environment variable not set, using empty password")
-	}
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -57,7 +55,7 @@ func initHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAlreadyReported)
 		return
 	}
-	acc_db.HSet(ctx, "user:"+account.ID, account, "create_time", fmt.Sprintf("%d", r.Context().Value(http.ServerContextKey).(http.ConnState)))
+	acc_db.HSet(ctx, "user:"+account.ID, account, "create_time", time.Now().Format("02.01.2006"))
 	w.WriteHeader(http.StatusCreated)
 }
 

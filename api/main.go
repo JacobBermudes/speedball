@@ -6,15 +6,16 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
 type Account struct {
-	ID       string `json:"id"`
+	ID       int64  `json:"id"`
 	Username string `json:"username"`
-	ChatID   string `json:"chat_id"`
+	ChatID   int64  `json:"chat_id"`
 	Balance  int64  `json:"balance"`
 	Tariff   string `json:"tariff"`
 	State    string `json:"state"`
@@ -42,20 +43,20 @@ func initHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	account.ID = r.URL.Query().Get("id")
+	account.ID, _ = strconv.ParseInt(r.URL.Query().Get("id"), 10, 64)
 	account.Username = r.URL.Query().Get("username")
-	account.ChatID = r.URL.Query().Get("chat_id")
-	if account.ID == "" || account.Username == "" || account.ChatID == "" {
+	account.ChatID, _ = strconv.ParseInt(r.URL.Query().Get("chat_id"), 10, 64)
+	if account.ID == 0 || account.Username == "" || account.ChatID == 0 {
 		http.Error(w, "Missing id, username or chat_id parameter", http.StatusBadRequest)
 		return
 	}
 
-	exist := acc_db.HExists(ctx, "user:"+account.ID, "create_time").Val()
+	exist := acc_db.HExists(ctx, "user:"+strconv.FormatInt(account.ID, 10), "create_time").Val()
 	if exist {
 		w.WriteHeader(http.StatusAlreadyReported)
 		return
 	}
-	acc_db.HSet(ctx, "user:"+account.ID, account, "create_time", time.Now().Format("02.01.2006"))
+	acc_db.HSet(ctx, "user:"+strconv.FormatInt(account.ID, 10), account, "create_time", time.Now().Format("02.01.2006"))
 	w.WriteHeader(http.StatusCreated)
 }
 

@@ -1,8 +1,8 @@
 
 # Endpoints (nginx conf)
-* Go server $SPEEDBALL_DOMEN/speedball-webhook:8443 -> localhsot:8800
-* Go server $SPEEDBALL_DOMEN/speedball-notify:8443 -> localhsot:8800
-* Go server $SPEEDBALL_DOMEN/speedball-api/v1:8443 -> localhsot:8801
+* Go server $SPEEDBALL_DOMEN/speedball-webhook:443 -> localhsot:8800
+* Go server $SPEEDBALL_DOMEN/speedball-notify:443 -> localhsot:8800
+* Go server $SPEEDBALL_DOMEN/speedball-api/v1:443 -> localhsot:8801
 
 
 # Dependencies for api and crypto daemon

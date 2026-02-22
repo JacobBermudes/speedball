@@ -1,5 +1,5 @@
 server {
-    listen 8443 ssl;
+    listen 443 ssl;
     server_name www.phunkao.fun;
 
     ssl_certificate /etc/letsencrypt/live/www.phunkao.fun/fullchain.pem;

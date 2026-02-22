@@ -30,7 +30,7 @@ func main() {
 	bot.Debug = true
 	log.Printf("Auth as: @%s", bot.Self.UserName)
 	webhookAddr := "/speedball-webhook"
-	webhookURL := "https://" + speedball_domen + ":8443" + webhookAddr
+	webhookURL := "https://" + speedball_domen + ":443" + webhookAddr
 	webhook, _ := tgbotapi.NewWebhook(webhookURL)
 	webhook.AllowedUpdates = []string{"message", "callback_query"}
 

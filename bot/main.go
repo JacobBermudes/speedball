@@ -1,4 +1,4 @@
-package speedball_tg_bot
+package main
 
 import (
 	"encoding/json"

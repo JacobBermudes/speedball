@@ -1,4 +1,4 @@
-package speedball_api
+package main
 
 import (
 	"context"

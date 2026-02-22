@@ -29,7 +29,7 @@ func main() {
 	}
 	bot.Debug = true
 	log.Printf("Auth as: @%s", bot.Self.UserName)
-	webhookAddr := "/speedball_webhook"
+	webhookAddr := "/speedball-webhook"
 	webhookURL := "https://" + speedball_domen + ":8443" + webhookAddr
 	webhook, _ := tgbotapi.NewWebhook(webhookURL)
 	webhook.AllowedUpdates = []string{"message", "callback_query"}
@@ -42,7 +42,7 @@ func main() {
 	updates := bot.ListenForWebhook(webhookAddr)
 
 	go func() {
-		http.HandleFunc("/speedball_notify", func(w http.ResponseWriter, r *http.Request) {
+		http.HandleFunc("/speedball-notify", func(w http.ResponseWriter, r *http.Request) {
 			type internalSendReq struct {
 				Cid  string `json:"cid"`
 				Text string `json:"text"`

@@ -1,7 +1,7 @@
 
 # Endpoints (nginx conf)
-* Go server $SPEEDBALL_DOMEN/speedball_webhook:8443 -> localhsot:8800
-* Go server $SPEEDBALL_DOMEN/speedball_notify:8443 -> localhsot:8800
+* Go server $SPEEDBALL_DOMEN/speedball-webhook:8443 -> localhsot:8800
+* Go server $SPEEDBALL_DOMEN/speedball-notify:8443 -> localhsot:8800
 * Go server $SPEEDBALL_DOMEN/speedball-api/v1:8443 -> localhsot:8801
 
 

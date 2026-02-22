@@ -13,11 +13,11 @@ import (
 )
 
 type Account struct {
-	ID      int64  `json:"id"`
-	ChatID  int64  `json:"chat_id"`
-	Balance int64  `json:"balance"`
-	Tariff  string `json:"tariff"`
-	State   string `json:"state"`
+	ID      int64  `json:"id" redis:"id"`
+	ChatID  int64  `json:"chat_id" redis:"chat_id"`
+	Balance int64  `json:"balance" redis:"balance"`
+	Tariff  string `json:"tariff" redis:"tariff"`
+	State   string `json:"state" redis:"state"`
 }
 
 var rdbpass = os.Getenv("REDIS_PASS")
@@ -48,13 +48,16 @@ func initHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing id, or chat_id parameter", http.StatusBadRequest)
 		return
 	}
+	account.Balance = 0
+	account.Tariff = "Стандартный"
+	account.State = "Отключен"
 
 	exist := acc_db.HExists(ctx, "user:"+strconv.FormatInt(account.ID, 10), "create_time").Val()
 	if exist {
 		w.WriteHeader(http.StatusAlreadyReported)
 		return
 	}
-	acc_db.HSet(ctx, "user:"+strconv.FormatInt(account.ID, 10), account)
+	acc_db.HSet(ctx, "user:"+strconv.FormatInt(account.ID, 10), &account)
 	acc_db.HSet(ctx, "user:"+strconv.FormatInt(account.ID, 10), "create_time", time.Now().Unix())
 	w.WriteHeader(http.StatusCreated)
 }

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"speedball/bot/commandHandlers"
+	commandhandlers "speedball/bot/commandHandlers"
 	"strconv"
 	"strings"
 
@@ -67,34 +67,64 @@ func main() {
 	if err := http.ListenAndServe(":8800", nil); err != nil {
 		log.Fatal("HTTP WebHook-Server FAULT:", err)
 	}
+
+	<-ctx.Done()
+	log.Println("Shutting down...")
 }
 
 // notifyHandler returns handler for internal POST notifications
 func notifyHandler(b *bot.Bot) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		type internalSendReq struct {
+		log.Printf("[NOTIFY] Запрос пришёл: %s %s", r.Method, r.URL.Path)
+
+		if r.Method != http.MethodPost {
+			log.Println("[NOTIFY] Method not allowed")
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var req struct {
 			Chat_id string `json:"chat_id"`
 			Text    string `json:"text"`
 		}
-		var req internalSendReq
+
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			fmt.Printf("BAD notify JSON")
+			log.Printf("[NOTIFY] JSON decode error: %v", err)
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
-		if req.Chat_id == "" || strings.TrimSpace(req.Text) == "" {
-			fmt.Printf("missing cid/text")
+
+		chatIDStr := strings.TrimSpace(req.Chat_id)
+		text := strings.TrimSpace(req.Text)
+
+		if chatIDStr == "" || text == "" {
+			log.Println("[NOTIFY] Missing chat_id or text")
+			http.Error(w, "chat_id and text are required", http.StatusBadRequest)
 			return
 		}
-		cid, _ := strconv.ParseInt(req.Chat_id, 10, 64)
-		_, err := b.SendMessage(context.Background(), &bot.SendMessageParams{
-			ChatID: cid,
-			Text:   req.Text,
-		})
+
+		chatID, err := strconv.ParseInt(chatIDStr, 10, 64)
 		if err != nil {
-			log.Println("send fail:", err)
+			log.Printf("[NOTIFY] Invalid chat_id: %v", err)
+			http.Error(w, "chat_id must be integer", http.StatusBadRequest)
 			return
 		}
+
+		log.Printf("[NOTIFY] Пытаемся отправить → chat_id=%d, text=%q", chatID, text)
+
+		_, sendErr := b.SendMessage(context.Background(), &bot.SendMessageParams{
+			ChatID: chatID,
+			Text:   text,
+		})
+
+		if sendErr != nil {
+			log.Printf("[NOTIFY] SendMessage error: %v", sendErr)
+			http.Error(w, fmt.Sprintf("Telegram error: %v", sendErr), http.StatusInternalServerError)
+			return
+		}
+
+		log.Println("[NOTIFY] Сообщение успешно отправлено")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		w.Write([]byte("ok\n"))
 	}
 }

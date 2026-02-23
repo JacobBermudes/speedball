@@ -36,6 +36,7 @@ func main() {
 	http.HandleFunc("/speedball-api/v1/init", initHandler)
 	http.HandleFunc("/speedball-api/v1/account", accountHandler)
 	http.HandleFunc("/speedball-api/v1/keys", keysHandler)
+	http.HandleFunc("/speedball-api/v1/topup", topUpHandler)
 	http.ListenAndServe(":8801", nil)
 	fmt.Println("Server starting on :8801")
 }
@@ -100,8 +101,31 @@ func keysHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	keys := acc_db.LRange(ctx, "user:"+id+":keys", 0, -1).Val()
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(keys)
+}
+
+func topUpHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		ID     string `json:"id"`
+		Amount int64 `json:"amount"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+	if req.ID == "" || req.Amount <= 0 {
+		http.Error(w, "Missing or invalid id or amount", http.StatusBadRequest)
+		return
+	}
+
+	acc_db.HIncrBy(ctx, "user:"+req.ID, "balance", req.Amount)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ok\n"))
 }

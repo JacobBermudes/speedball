@@ -75,7 +75,7 @@ func main() {
 // notifyHandler returns handler for internal POST notifications
 func notifyHandler(b *bot.Bot) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("[NOTIFY] Запрос пришёл: %s %s", r.Method, r.URL.Path)
+		log.Printf("[NOTIFY]: %s %s", r.Method, r.URL.Path)
 
 		if r.Method != http.MethodPost {
 			log.Println("[NOTIFY] Method not allowed")
@@ -110,7 +110,7 @@ func notifyHandler(b *bot.Bot) http.HandlerFunc {
 			return
 		}
 
-		log.Printf("[NOTIFY] Пытаемся отправить → chat_id=%d, text=%q", chatID, text)
+		log.Printf("[NOTIFY] chat_id=%d, text=%q", chatID, text)
 
 		_, sendErr := b.SendMessage(context.Background(), &bot.SendMessageParams{
 			ChatID: chatID,
@@ -122,8 +122,6 @@ func notifyHandler(b *bot.Bot) http.HandlerFunc {
 			http.Error(w, fmt.Sprintf("Telegram error: %v", sendErr), http.StatusInternalServerError)
 			return
 		}
-
-		log.Println("[NOTIFY] Сообщение успешно отправлено")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok\n"))
 	}

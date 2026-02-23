@@ -28,6 +28,7 @@ func StartHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	}
 
 	account.Init(ref)
+	account.GetData()
 
 	b.SendMessage(ctx, messages.HomeMsg(account, update.Message.From.FirstName))
 }

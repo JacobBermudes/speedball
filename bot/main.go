@@ -1,16 +1,18 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"speedball/bot/accounts"
+	"os/signal"
+	"speedball/bot/commandHandlers"
 	"strconv"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/go-telegram/bot"
 )
 
 func main() {
@@ -23,90 +25,76 @@ func main() {
 		log.Fatal("SPEEDBALL_TG_BOT_TOKEN environment variable not set")
 	}
 
-	bot, err := tgbotapi.NewBotAPI(token)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
+	opts := []bot.Option{
+		bot.WithDebug(),
+		bot.WithAllowedUpdates([]string{"message", "callback_query"}),
+		bot.WithWebhookSecretToken("token"),
+	}
+
+	b, err := bot.New(token, opts...)
 	if err != nil {
 		log.Fatal("Bot create FAIL:", err)
 	}
-	bot.Debug = true
-	log.Printf("Auth as: @%s", bot.Self.UserName)
+
 	webhookAddr := "/speedball-webhook"
 	webhookURL := "https://" + speedball_domen + ":443" + webhookAddr
-	webhook, _ := tgbotapi.NewWebhook(webhookURL)
-	webhook.AllowedUpdates = []string{"message", "callback_query"}
 
-	_, err = bot.Request(webhook)
-	if err != nil {
+	if _, err := b.SetWebhook(ctx, &bot.SetWebhookParams{
+		URL:            webhookURL,
+		AllowedUpdates: []string{"message", "callback_query"},
+		SecretToken:    "token",
+	}); err != nil {
 		log.Fatal("Setting webhook FAIL:", err)
 	}
 	log.Println("Webhook setted:", webhookURL)
-	updates := bot.ListenForWebhook(webhookAddr)
 
-	go func() {
-		http.HandleFunc("/speedball-notify", func(w http.ResponseWriter, r *http.Request) {
-			type internalSendReq struct {
-				Chat_id  string `json:"chat_id"`
-				Text string `json:"text"`
-			}
-			var req internalSendReq
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				fmt.Printf("BAD notify JSON")
-				return
-			}
-			if req.Chat_id == "" || strings.TrimSpace(req.Text) == "" {
-				fmt.Printf("missing cid/text")
-				return
-			}
-			cid, _ := strconv.ParseInt(req.Chat_id, 10, 64)
-			msg := tgbotapi.NewMessage(cid, req.Text)
-			if _, err := bot.Send(msg); err != nil {
-				log.Println("send fail:", err)
-				return
-			}
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("ok"))
+	b.RegisterHandler(
+		bot.HandlerTypeMessageText,
+		"/start",
+		bot.MatchTypePrefix,
+		commandhandlers.StartHandler,
+	)
+
+	go b.StartWebhook(ctx)
+
+	http.HandleFunc(webhookAddr, b.WebhookHandler())
+	http.HandleFunc("/speedball-notify", notifyHandler(b))
+
+	log.Println("Speedball WebHook listening :8800 (HTTP)")
+	if err := http.ListenAndServe(":8800", nil); err != nil {
+		log.Fatal("HTTP WebHook-Server FAULT:", err)
+	}
+}
+
+// notifyHandler returns handler for internal POST notifications
+func notifyHandler(b *bot.Bot) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type internalSendReq struct {
+			Chat_id string `json:"chat_id"`
+			Text    string `json:"text"`
+		}
+		var req internalSendReq
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			fmt.Printf("BAD notify JSON")
+			return
+		}
+		if req.Chat_id == "" || strings.TrimSpace(req.Text) == "" {
+			fmt.Printf("missing cid/text")
+			return
+		}
+		cid, _ := strconv.ParseInt(req.Chat_id, 10, 64)
+		_, err := b.SendMessage(context.Background(), &bot.SendMessageParams{
+			ChatID: cid,
+			Text:   req.Text,
 		})
-
-		if err := http.ListenAndServe(":8800", nil); err != nil {
-			log.Fatal("HTTP WebHook-Server FAULT:", err)
+		if err != nil {
+			log.Println("send fail:", err)
+			return
 		}
-		log.Println("Speedball WebHook listening :8800 (HTTP)")
-	}()
-
-	for update := range updates {
-		log.Printf("Get update: %+v", update)
-
-		if update.Message != nil && update.Message.IsCommand() {
-			if update.Message.Command() == "start" {
-
-				account := accounts.Account{
-					ID:     update.Message.From.ID,
-					ChatID: update.Message.Chat.ID,
-				}
-				account.Init()
-				account.GetData()
-
-				bot.Send(HomeMsg(account, update.Message.From.UserName))
-			}
-		}
-
-		if update.Message != nil {
-
-		}
-
-		if update.CallbackQuery != nil {
-
-			// switch update.CallbackQuery.Data {
-			// case "vpnConnect":
-			// 	account := accounts.Account{
-			// 		ID:     update.CallbackQuery.From.ID,
-			// 		ChatID: update.CallbackQuery.Message.Chat.ID,
-			// 	}
-			// 	account.GetData()
-			// 	bot.Send(settingsMsg(account))
-			// case "paymentMenu":
-
-			callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
-			bot.Request(callback)
-		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
 	}
 }

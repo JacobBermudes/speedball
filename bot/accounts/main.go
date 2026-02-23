@@ -15,7 +15,7 @@ type Account struct {
 	State    string `json:"state"`
 }
 
-func (a *Account) Init() {
+func (a *Account) Init(r string) {
 	initParams := url.Values{
 		"id":       {strconv.FormatInt(a.ID, 10)},
 		"chat_id":  {strconv.FormatInt(a.ChatID, 10)},
@@ -30,6 +30,10 @@ func (a *Account) Init() {
 
 	if resp.StatusCode != http.StatusAlreadyReported && resp.StatusCode != http.StatusCreated {
 		panic("Failed to initialize account")
+	}
+
+	if r != "" {
+		// Handle referral code if needed
 	}
 }
 

@@ -51,3 +51,24 @@ func (a *Account) GetData() {
 		panic(err)
 	}
 }
+
+func (a *Account) GetKeys() []string {
+	ap := url.Values{
+		"id": {strconv.FormatInt(a.ID, 10)},
+	}
+	resp, err := http.Get("http://localhost:8801/speedball-api/v1/keys?" + ap.Encode())
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		panic("Failed to get account keys")
+	}
+
+	var keys []string
+	if err := json.NewDecoder(resp.Body).Decode(&keys); err != nil {
+		panic(err)
+	}
+	return keys
+}

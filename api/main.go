@@ -30,8 +30,12 @@ var acc_db = redis.NewClient(&redis.Options{
 })
 
 func main() {
+	if rdbpass == "" {
+		panic("REDIS_PASS environment variable not set")
+	}
 	http.HandleFunc("/speedball-api/v1/init", initHandler)
 	http.HandleFunc("/speedball-api/v1/account", accountHandler)
+	http.HandleFunc("/speedball-api/v1/keys", keysHandler)
 	http.ListenAndServe(":8801", nil)
 	fmt.Println("Server starting on :8801")
 }
@@ -83,4 +87,21 @@ func accountHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(account)
+}
+
+func keysHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, "Missing id parameter", http.StatusBadRequest)
+		return
+	}
+
+
+	keys := acc_db.LRange(ctx, "user:"+id+":keys", 0, -1).Val()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(keys)
 }
